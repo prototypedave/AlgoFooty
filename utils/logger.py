@@ -20,7 +20,7 @@ log_colors = {
 # Optional tags
 tag_colors = {
     "DB:": ORANGE,
-    "SCRAPE:": GREEN,
+    "APP:": GREEN,
     "FLASHSCORE": PURPLE,
     "GAME": WHITE
 }

@@ -1,5 +1,6 @@
 # Scrape Class App
 from .events import get_events
+from .navigation import navigate_to_page
 from playwright.async_api import async_playwright
 
 from utils.logger import logger
@@ -39,7 +40,7 @@ class Scraper:
         except Exception as e:
             logger.error(f"APP: Encountered error while closing Flashscore App: {e}")
 
-    async def load_flashscore(self, url: str = "https://www.flashscore.com/"):
+    async def load_flashscore(self, days=0, move=None, url: str = "https://www.flashscore.com/"):
         if not self.context:
             raise RuntimeError("Browser context not initialized")    
         page = await self.context.new_page()
@@ -51,9 +52,17 @@ class Scraper:
                 await page.route("**/*", block_junk)
             except Exception as e:
                 logger.warning(f"FLASHSCORE: Failed to configure routing: {e}")
+                
             await page.goto(url)
+            if days > 0 and move == 'prev':
+                page = await navigate_to_page(page, prev=True, days=days)
+            elif days > 0 and move == 'next':
+                page = await navigate_to_page(page, next=True, days=days)
+            elif days > 0 and not move:
+                raise RuntimeWarning("Incorrect call for load_flashscore, running default")
+            
             event_links = await get_events(page, "FLASHSCORE:")
-            print(event_links)
+            #print(event_links)
                    
         except Exception as e:
             logger.error(f"FLASHSCORE: Error loading main page {url}: {e}")
