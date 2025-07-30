@@ -21,7 +21,7 @@ FEAT_COLS_15 = [
 
 COLS_15_WITH_ODDS = FEAT_COLS_15 + ['y_pred', 'y_proba', 'odds_over_15', 'odds_under_15', 'odds_over_25', ]
 
-def predict_over_15(train_features, pred_features):
+def predict_over_15(train_features, pred_features, final_df):
     """
         Predicts matches that will end in a total goals of 2 or more
     """
@@ -40,4 +40,6 @@ def predict_over_15(train_features, pred_features):
     f_proba, f_pred, pred_df = filter_predictions(F_train, F_test, f_train, f_test, F_pred, pred_df)
 
     confidence = confidence_threshold(f_pred, f_proba, f_test, start=0.90)
-    return pred_df[(pred_df['proba'] >= confidence)], f_pred, f_proba, pred_df, f_test
+    final_df['pred15'] = f_pred
+    final_df['proba15'] = f_proba
+    return pred_df[(pred_df['proba'] >= confidence)], pred_df, final_df, f_test
