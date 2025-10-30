@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from .predictions import tf_train, tf_predict
+from sqlalchemy import create_engine
 
 def predict_over_2_5(df: pd.DataFrame, pred: pd.DataFrame) -> None:
     df = df.sort_values("match_time")
@@ -17,8 +18,24 @@ def predict_over_2_5(df: pd.DataFrame, pred: pd.DataFrame) -> None:
     
     model = tf_train(feat_home_away_df, feat_h2h_df, feat_odd_df, feat_game_df, df["match_25"].values)
     over = tf_predict(model, feat_home_away_pred, feat_h2h_pred, feat_odd_pred, feat_game_pred, pred)
+    save_predictions(over)
     
 
-def assemble_prev_results(df: pd.DataFrame, pref="h"):
+def assemble_prev_results(df: pd.DataFrame, pref="h") -> np.array:
     cols = [f"{pref}_ov_25_0", f"{pref}_ov_25_1", f"{pref}_ov_25_2", f"{pref}_ov_25_3"]
     return df[cols].values[..., np.newaxis]
+
+
+def save_predictions(over: pd.DataFrame) -> None:
+    save_cols = ["home_team", "away_team", "league", "round", "country", "odds", "match_time", "win", "home_score", "away_score", "proba"]
+    over = over.drop_duplicates(subset=["home_team", "away_team", "match_time"], keep="first")
+        
+    over = over.rename(columns={'over/under_over_25': "odds"})
+    over["win"] = pd.NA
+    over["home_score"] = pd.NA
+    over["away_score"] = pd.NA
+
+    # update club icons !!!
+   
+    conn = create_engine("postgresql+psycopg2://postgres:your_password@localhost:5432/final")
+    over[save_cols].to_sql("over_pred", con=conn, if_exists="append", index=False)

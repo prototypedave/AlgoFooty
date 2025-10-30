@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from .predictions import tf_train, tf_predict
-from sklearn.preprocessing import StandardScaler
+from sqlalchemy import create_engine
 
 def predict_away_result(df: pd.DataFrame, pred: pd.DataFrame) -> None:
     df = df.sort_values("match_time")
@@ -22,7 +22,7 @@ def predict_away_result(df: pd.DataFrame, pred: pd.DataFrame) -> None:
     
     model = tf_train(feat_home_away_df, feat_h2h_df, feat_odd_df, feat_context_df, df["match_away"].values)
     tf_away = tf_predict(model, feat_home_away_pred, feat_h2h_pred, feat_odd_pred, feat_context_pred, pred)
-    print(tf_away)
+    save_predictions(tf_away)
 
 
 def assemble_prev_results(df: pd.DataFrame, pref="h"):
@@ -30,3 +30,18 @@ def assemble_prev_results(df: pd.DataFrame, pref="h"):
             [f"{pref}_draw_0", f"{pref}_draw_1", f"{pref}_draw_2", f"{pref}_draw_3"],
             [f"{pref}_lost_0", f"{pref}_lost_1", f"{pref}_lost_2", f"{pref}_lost_3"]]
     return np.stack((df[cols[0]].values, df[cols[1]].values, df[cols[2]].values), axis=-1) # win, draw, lost
+
+
+def save_predictions(away: pd.DataFrame) -> None:
+    save_cols = ["home_team", "away_team", "league", "round", "country", "odds", "match_time", "win", "home_score", "away_score", "proba"]
+    away = away.drop_duplicates(subset=["home_team", "away_team", "match_time"], keep="first")
+        
+    away = away.rename(columns={'1x2_away_win': "odds"})
+    away["win"] = pd.NA
+    away["home_score"] = pd.NA
+    away["away_score"] = pd.NA
+
+    # update club icons !!!
+   
+    conn = create_engine("postgresql+psycopg2://postgres:your_password@localhost:5432/final")
+    away[save_cols].to_sql("away_pred", con=conn, if_exists="append", index=False)

@@ -14,9 +14,9 @@ def predict_home_result(df: pd.DataFrame, pred:pd.DataFrame) -> None:
     feat_odd_df, feat_odd_pred = df[cols].values, pred[cols].values
 
     cols = ["home_w_rate", "home_l_rate", "home_d_rate", "away_w_rate", "away_l_rate", "away_d_rate",
-        "home_win_rate_diff", "home_loss_rate_diff", "home_draw_rate_diff", "home_rank", "away_rank", 
-        "home_points_diff", "home_scoring_diff", "home_conceding_diff", "home_goals_diff", "home_r_w_rate", "away_r_w_rate",
-        "home_diff_roll_w_rate", "home_scoring_r_diff", "home_conceding_r_diff",
+            "home_win_rate_diff", "home_loss_rate_diff", "home_draw_rate_diff", "home_rank", "away_rank", 
+            "home_points_diff", "home_scoring_diff", "home_conceding_diff", "home_goals_diff", "home_r_w_rate", "away_r_w_rate",
+            "home_diff_roll_w_rate", "home_scoring_r_diff", "home_conceding_r_diff",
     ]
     feat_context_df, feat_context_pred = df[cols].values, pred[cols].values
     feat_home_away_df = np.concatenate((feat_home_df, feat_away_df), axis=-1)
@@ -35,7 +35,7 @@ def predict_home_result(df: pd.DataFrame, pred:pd.DataFrame) -> None:
 
 
 def save_predictions(tf_home, tf_dependant, torch_home, torch_dependant):
-    save_cols = ["home_team", "away_team", "league", "round", "country", "odds", "match_time", "win", "home_score", "away_score"]
+    save_cols = ["home_team", "away_team", "league", "round", "country", "odds", "match_time", "win", "home_score", "away_score", "proba"]
     if tf_dependant and not torch_dependant:
         home = tf_home
     elif torch_dependant and not tf_dependant:
@@ -50,7 +50,7 @@ def save_predictions(tf_home, tf_dependant, torch_home, torch_dependant):
     home["away_score"] = pd.NA
    
     conn = create_engine("postgresql+psycopg2://postgres:your_password@localhost:5432/final")
-    #home.to_sql("home_pred", con=conn, if_exists="append", index=False)
+    home[save_cols].to_sql("home_pred", con=conn, if_exists="append", index=False)
 
 
 def assemble_prev_results(df: pd.DataFrame, pref="h"):
