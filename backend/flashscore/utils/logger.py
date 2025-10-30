@@ -43,7 +43,7 @@ formatter = colorlog.ColoredFormatter(
 )
 
 logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 handler = logging.StreamHandler()
 handler.setFormatter(formatter)

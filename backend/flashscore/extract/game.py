@@ -10,6 +10,9 @@ async def process_game(page):
     try:  
         home_link = await page.locator(".duelParticipant__home .participant__participantName a").first.get_attribute('href')
         away_link = await page.locator(".duelParticipant__away .participant__participantName a").first.get_attribute('href')
+        home_img = await page.locator(".duelParticipant__home .participant__image").first.get_attribute('src')
+        away_img = await page.locator(".duelParticipant__away .participant__image").first.get_attribute('src')
+
         country, league, round_ = await get_header_items(page)
         home, away = await get_team_names(page)
         match_time = await get_match_time(page)
@@ -30,6 +33,7 @@ async def process_game(page):
         future_game['country'], future_game['league'], future_game['round'] = country, league, round_
         future_game['home_team'], future_game['away_team'] = home, away
         future_game['match_time'] = match_time
+        future_game['home_img'], future_game['away_img'] = home_img, away_img
         for odd, v in match_odds.items():
             future_game[odd] = v            
             for h2h, v in h2h_stats.items():

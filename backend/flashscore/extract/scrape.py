@@ -4,8 +4,6 @@ from extract.game import process_game
 from extract.navigate import navigate_to_page
 from extract.scrape_utils import block_junk
 from playwright.async_api import async_playwright
-from processing.data import process_games
-from processing.results import update_results
 from sqlalchemy import create_engine, MetaData, Table
 from sqlalchemy.dialects.postgresql import insert
 from typing import List, Dict
@@ -47,8 +45,9 @@ class FlashscoreApp:
             games = games.drop_duplicates(subset=["home_team", "away_team", "match_time"])
             
             if not games.empty:
-                metadata = MetaData()
-                table = Table("league_games", metadata, autoload_with=self.engine)
+                games.to_sql("new_league", con=self.engine, if_exists="append", index=False)
+                '''metadata = MetaData()
+                table = Table("new_league", metadata, autoload_with=self.engine)
 
                 with self.engine.begin() as conn:
                     for _, row in games.iterrows():
@@ -63,13 +62,13 @@ class FlashscoreApp:
                             },
                         )
 
-                        conn.execute(stmt)
+                        conn.execute(stmt)'''
 
             logger.info("DB: updated games table")
 
             if self.pred_batch:
                 pred = pd.DataFrame(self.pred_batch)
-                pred.to_sql("league_pred", con=self.engine, if_exists="append", index=False)
+                pred.to_sql("new_pred", con=self.engine, if_exists="append", index=False)
             
             self.batch.clear()
             self.pred_batch.clear()
@@ -148,20 +147,20 @@ class FlashscoreApp:
 
     async def get_data_from_db(self):
         df = pd.read_sql("SELECT * FROM league_games", con=self.engine)
-        today = (datetime.now()).date()
+        today = (datetime.now() - timedelta(days=2)).date()
         query = f"""
             SELECT *
-            FROM league_pred
+            FROM new_league
             WHERE DATE(match_time) = '{today}'
             """
         pred = pd.read_sql(query, con=self.engine)
         return df, pred
     
     async def retrieve_data_for_results(self):
-        prev = (datetime.now() - timedelta(days=1)).date()
+        prev = (datetime.now() - timedelta(days=2)).date()
         query = f"""
             SELECT *
-            FROM league_games
+            FROM new_pred
             WHERE DATE(match_time) = '{prev}'
             """
         return pd.read_sql(query, con=self.engine)
@@ -170,9 +169,11 @@ if __name__ == "__main__":
     async def main():
         app = FlashscoreApp(concurrency=2)
         await app.start()
-        #await app.run_app(days=-1)
-        df, pred = await app.get_data_from_db()
-        process_games(df, pred, app.engine)
+        for i in [0]:
+            await app.run_app(days=i)
+        #df, pred = await app.get_data_from_db()
+        #print(len(df))
+        #process_games(df, pred, app.engine)
         #res = await app.retrieve_data_for_results()
         #update_results(res, app.engine)
         await app.stop()
