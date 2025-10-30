@@ -156,26 +156,13 @@ class FlashscoreApp:
         pred = pd.read_sql(query, con=self.engine)
         return df, pred
     
-    async def retrieve_data_for_results(self):
-        prev = (datetime.now() - timedelta(days=2)).date()
-        query = f"""
-            SELECT *
-            FROM new_pred
-            WHERE DATE(match_time) = '{prev}'
-            """
-        return pd.read_sql(query, con=self.engine)
-    
+
 if __name__ == "__main__":
     async def main():
         app = FlashscoreApp(concurrency=2)
         await app.start()
-        for i in [0]:
-            await app.run_app(days=i)
-        #df, pred = await app.get_data_from_db()
-        #print(len(df))
-        #process_games(df, pred, app.engine)
-        #res = await app.retrieve_data_for_results()
-        #update_results(res, app.engine)
+        await app.run_app(days=0)
+        
         await app.stop()
 
     asyncio.run(main())
