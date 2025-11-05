@@ -27,7 +27,7 @@ def assemble_prev_results(df: pd.DataFrame, pref="h") -> np.array:
 
 
 def save_predictions(over: pd.DataFrame) -> None:
-    save_cols = ["home_team", "away_team", "league", "round", "country", "odds", "match_time", "win", "home_score", "away_score", "proba"]
+    save_cols = ["home_team", "away_team", "league", "round", "country", "odds", "match_time", "win", "home_score", "away_score", "proba", "home_img", "away_img"]
     over = over.drop_duplicates(subset=["home_team", "away_team", "match_time"], keep="first")
         
     over = over.rename(columns={'over/under_over_25': "odds"})

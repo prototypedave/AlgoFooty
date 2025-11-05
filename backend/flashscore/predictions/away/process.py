@@ -33,7 +33,7 @@ def assemble_prev_results(df: pd.DataFrame, pref="h"):
 
 
 def save_predictions(away: pd.DataFrame) -> None:
-    save_cols = ["home_team", "away_team", "league", "round", "country", "odds", "match_time", "win", "home_score", "away_score", "proba"]
+    save_cols = ["home_team", "away_team", "league", "round", "country", "odds", "match_time", "win", "home_score", "away_score", "proba", "home_img", "away_img"]
     away = away.drop_duplicates(subset=["home_team", "away_team", "match_time"], keep="first")
         
     away = away.rename(columns={'1x2_away_win': "odds"})

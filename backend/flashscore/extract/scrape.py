@@ -161,7 +161,7 @@ if __name__ == "__main__":
     async def main():
         app = FlashscoreApp(concurrency=2)
         await app.start()
-        await app.run_app(days=0)
+        await app.run_app(days=-2)
         
         await app.stop()
 
