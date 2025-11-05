@@ -52,29 +52,33 @@ export default function Predictions() {
     }, []);
 
     useEffect(() => {
-        if (!data || Object.keys(data).length === 0) return;
+  if (!data || Object.keys(data).length === 0) return;
 
-        const matches = Object.values(data);
-        const now = new Date();
+  const matches = Object.values(data);
+  const now = new Date();
 
-        const filteredMatches = matches.filter((match) => {
-        const matchTime = new Date(match.date);
+  const filteredMatches = matches
+    .filter((match) => {
+      const matchTime = new Date(match.date);
 
-        if (timeFilter !== "All") {
-            const hours = parseInt(timeFilter.match(/\d+/)?.[0] || "0");
-            const cutoff = new Date(now.getTime() + hours * 60 * 60 * 1000);
-            if (matchTime > cutoff) return false;
-        }
+      if (timeFilter !== "All") {
+        const hours = parseInt(timeFilter.match(/\d+/)?.[0] || "0");
+        const cutoff = new Date(now.getTime() + hours * 60 * 60 * 1000);
+        if (matchTime > cutoff) return false;
+      }
 
-        if (countryFilter !== "All" && match.country !== countryFilter) return false;
-        if (leagueFilter !== "All" && match.league !== leagueFilter) return false;
-        if (marketFilter !== "All" && match.prediction !== marketFilter) return false;
+      if (countryFilter !== "All" && match.country !== countryFilter) return false;
+      if (leagueFilter !== "All" && match.league !== leagueFilter) return false;
+      if (marketFilter !== "All" && match.prediction !== marketFilter) return false;
 
-        return true;
-        });
+      return true;
+    })
+    // ✅ Sort by match time (earliest first)
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-        setFiltered(filteredMatches);
-    }, [data, timeFilter, countryFilter, leagueFilter, marketFilter]);
+  setFiltered(filteredMatches);
+}, [data, timeFilter, countryFilter, leagueFilter, marketFilter]);
+
 
     if (loading) return <p className="text-white p-4">Loading...</p>;
 

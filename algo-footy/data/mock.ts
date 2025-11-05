@@ -9,6 +9,9 @@ export interface Match {
   hicon: string;
   aicon: string;
   probability: number;
+  hscore: number | string;
+  ascore: number | string;
+  win: boolean | string | number;
 }
 
 export type MatchData = Record<string, Match>;
