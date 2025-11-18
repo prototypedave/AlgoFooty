@@ -39,7 +39,7 @@ export default function Predictions() {
     useEffect(() => {
     async function fetchData() {
       try {
-        const res = await fetch("http://127.0.0.1:8000/gen-predictions/"); 
+        const res = await fetch('api/predictions'); 
         const json: MatchData = await res.json();
         setData(json);
         setLoading(false);
@@ -73,7 +73,6 @@ export default function Predictions() {
 
       return true;
     })
-    // ✅ Sort by match time (earliest first)
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   setFiltered(filteredMatches);
@@ -90,17 +89,17 @@ export default function Predictions() {
     return (
         <div className="flex flex-col p-4 gap-4 w-full">
             <h1 className="text-3xl font-bold">Predictions</h1>
-            <div className="flex gap-10 w-full">
-                <Dropdown
-                    label="Time"
-                    options={["Next 1hr", "Next 3hrs", "Next 6hrs", "Next 12hrs", "All"]}
-                    onSelect={setTimeFilter}
-                />
-                <Dropdown label="Country" options={countries} onSelect={setCountryFilter} />
-                <Dropdown label="League" options={leagues} onSelect={setLeagueFilter} />
-                <Dropdown label="Market" options={markets} onSelect={setMarketFilter} />
+            <div className="hidden lg:flex lg:gap-10 w-full">
+                    <Dropdown
+                        label="Time"
+                        options={["Next 1hr", "Next 3hrs", "Next 6hrs", "Next 12hrs", "All"]}
+                        onSelect={setTimeFilter}
+                    />
+                    <Dropdown label="Country" options={countries} onSelect={setCountryFilter} />
+                    <Dropdown label="League" options={leagues} onSelect={setLeagueFilter} />
+                    <Dropdown label="Market" options={markets} onSelect={setMarketFilter} />
             </div>
-            <div className="flex w-full overflow-y-auto">
+            <div className="hidden lg:flex lg:w-full lg:overflow-y-auto">
                 <ol className="flex flex-col w-full gap-4 pr-2">
                     {filtered.map((match, index) => (
                         <li key={index} className="flex bg-gradient-to-r from-[#001730] to-[#004080] w-full items-center shadow-lg p-2 h-16">
@@ -141,7 +140,56 @@ export default function Predictions() {
                     ))}
                 </ol>
             </div>
+            <div className="flex flex-col w-full gap-4 lg:hidden">
+                {filtered.map((match, index) => {
+                    const date = new Date(match.date);
+                    const formattedDate = date.toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                    });
+                    return (
+                        <li key={index} className="flex flex-col bg-gradient-to-r from-[#001730] to-[#004080] w-full shadow-lg p-2 h-32">
+                            <div className="flex text-sm justify-between">
+                                <p className="left-0 text-gray-400">{formattedDate}, {new Date(match.date).toLocaleString([], {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    hour12: false, 
+                                })}</p>
+                 
+                            </div>
+                            <div className="flex pt-4 gap-4 justify-between items-center">
+                                 <div className="flex justify-between items-center font-bold">
+                                    <Image 
+                                        className="h-10 w-10 pr-2"
+                                        src={match.hicon}
+                                        width={500}
+                                        height={500}
+                                        alt="home icon"
+                                    />
+                                    <p>{match.home}</p>
+                                </div>
+                                <p className="">vs</p>
+                                <div className="flex justify-between items-center justify-center font-bold">
+                                    <p>{match.away}</p>
+                                    <Image 
+                                        className="h-10 w-10 pl-2"
+                                        src={match.aicon}
+                                        width={500}
+                                        height={500}
+                                        alt="away icon"
+                                    />
+                                </div>
+                            </div>
+			    <div className="flex pt-4 text-sm justify-between text-gray-300 font-semibold">
+                                <p>Pick: <span className="text-orange-red">{match.prediction}</span></p>
+				<p>Odds: <span>{match.odds}</span></p>
+				<p>Chance: <span> {Math.round(match.probability * 100)}%</span></p>
+
+                            </div>
+                        </li>
+                    );
+                })}
+            </div>
         </div>
-           
     );
 }

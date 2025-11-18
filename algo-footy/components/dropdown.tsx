@@ -34,7 +34,7 @@ export default function Dropdown({ label, options, onSelect }: DropdownProps) {
   }, []);
 
   return (
-    <div ref={dropdownRef} className="relative inline-block w-48 text-white">
+    <div ref={dropdownRef} className="relative inline-block lg:w-48 text-white">
       <button
         onClick={() => setIsOpen((prev) => !prev)}
         className="flex justify-between items-center w-full bg-[#002147] hover:bg-[#003366] px-4 py-2 rounded-md"
