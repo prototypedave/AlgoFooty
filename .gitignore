@@ -1,2 +1,5 @@
 .history/
 *.zip
+test.py
+text.py
+.gitignore
