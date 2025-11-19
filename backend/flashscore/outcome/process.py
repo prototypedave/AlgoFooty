@@ -6,6 +6,7 @@ import asyncio
 
 async def retrieve_data_for_results(engine, days):
     prev = (datetime.now() - timedelta(days=days)).date()
+    print(prev)
     query = f"""
         SELECT *
         FROM new_league
@@ -14,7 +15,7 @@ async def retrieve_data_for_results(engine, days):
     return pd.read_sql(query, con=engine)
 
 
-async def update_results(days: int = 2):
+async def update_results(days: int = 1):
     engine = create_engine("postgresql+psycopg2://postgres:your_password@localhost:5432/final")
     df = await retrieve_data_for_results(engine, days)
     def safe_numeric(df, cols):
@@ -23,7 +24,7 @@ async def update_results(days: int = 2):
         return df
 
     # --- HOME ---
-    home = pd.read_sql(query_const("home_pred"), con=engine)
+    home = pd.read_sql(query_const("home_pred", days), con=engine)
     home = update_df(df, home)
     home = safe_numeric(home, ["home_score", "away_score"])
     home["win"] = home.apply(
@@ -37,7 +38,7 @@ async def update_results(days: int = 2):
     update_table(engine, "home_pred", home)
 
     # --- AWAY ---
-    away = pd.read_sql(query_const("away_pred"), con=engine)
+    away = pd.read_sql(query_const("away_pred", days), con=engine)
     away = update_df(df, away)
     away = safe_numeric(away, ["home_score", "away_score"])
     away["win"] = away.apply(
@@ -51,7 +52,7 @@ async def update_results(days: int = 2):
     update_table(engine, "away_pred", away)
 
     # --- OVER ---
-    over = pd.read_sql(query_const("over_pred"), con=engine)
+    over = pd.read_sql(query_const("over_pred", days), con=engine)
     over = update_df(df, over)
     over = safe_numeric(over, ["home_score", "away_score"])
     over["win"] = over.apply(
@@ -66,8 +67,8 @@ async def update_results(days: int = 2):
 
     
     
-def query_const(table):
-    prev = (datetime.now() - timedelta(days=2)).date()
+def query_const(table, days):
+    prev = (datetime.now() - timedelta(days=days)).date()
     return f"""
         SELECT *
         FROM {table}
