@@ -2,6 +2,10 @@ import pandas as pd
 import numpy as np
 from .predictions import tf_train, tf_predict
 from sqlalchemy import create_engine
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 def predict_over_2_5(df: pd.DataFrame, pred: pd.DataFrame) -> None:
     df = df.sort_values("match_time")
@@ -37,5 +41,5 @@ def save_predictions(over: pd.DataFrame) -> None:
 
     # update club icons !!!
    
-    conn = create_engine("postgresql+psycopg2://postgres:your_password@localhost:5432/final")
-    over[save_cols].to_sql("over_pred", con=conn, if_exists="append", index=False)
+    conn = create_engine(os.getenv("DB_CONN"))
+    over[save_cols].to_sql(os.getenv("OVER_TABLE"), con=conn, if_exists="append", index=False)

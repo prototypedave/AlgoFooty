@@ -1,6 +1,6 @@
 
-from extract.scrape_utils import get_over_odds, get_1x2_odds, get_btts_odds, get_double_chance_odds
-from utils.logger import logger
+from flashscore.extract.scrape_utils import get_over_odds, get_1x2_odds, get_btts_odds, get_double_chance_odds
+from flashscore.utils.logger import logger
 
 TAB_HANDLERS = {
     "Over/Under": get_over_odds,
@@ -9,34 +9,34 @@ TAB_HANDLERS = {
     "Double chance": get_double_chance_odds,
 }
 
-async def get_odds(page):
+def get_odds(page):
     try:
-        buttons = await page.query_selector_all("button, [role='tab']")
+        buttons = page.query_selector_all("button, [role='tab']")
         for i, btn in enumerate(buttons):
-            text = (await btn.text_content() or "").strip()
+            text = (btn.text_content() or "").strip()
             if text == "Odds":
-                return await click_odds_button(page, btn)
+                return click_odds_button(page, btn)
                               
     except Exception as e:
         logger.debug(f"Error extracting stats: {e}")
     return None
 
-async def click_odds_button(page, btn):
+def click_odds_button(page, btn):
     match_odds = {}
     try:
-        await btn.scroll_into_view_if_needed()
-        await page.wait_for_timeout(500)
-        await btn.click(timeout=5000)
-        await page.wait_for_selector(
+        btn.scroll_into_view_if_needed()
+        page.wait_for_timeout(500)
+        btn.click(timeout=5000)
+        page.wait_for_selector(
             ".container__livetable .container__detailInner .oddsTab__tableWrapper", timeout=5000
         )
 
         for tab_name, scrape_func in TAB_HANDLERS.items():
             try:
-                buttons = await page.query_selector_all("button, [role='tab']")
+                buttons = page.query_selector_all("button, [role='tab']")
                 target_btn = None
                 for b in buttons:
-                    text = (await b.text_content() or "").strip()
+                    text = (b.text_content() or "").strip()
                     if text == tab_name:
                         target_btn = b
                         break
@@ -45,15 +45,15 @@ async def click_odds_button(page, btn):
                     logger.debug(f"click_odds_button - Odds tab '{tab_name}' not found.")
                     continue
 
-                await target_btn.scroll_into_view_if_needed()
-                await page.wait_for_timeout(500)
-                await target_btn.click(timeout=5000)
-                await page.wait_for_selector(
+                target_btn.scroll_into_view_if_needed()
+                page.wait_for_timeout(500)
+                target_btn.click(timeout=5000)
+                page.wait_for_selector(
                     ".container__livetable .container__detailInner .oddsTab__tableWrapper", timeout=5000
                 )
-                await page.wait_for_timeout(300)
+                page.wait_for_timeout(300)
 
-                odds = await scrape_func(page)
+                odds = scrape_func(page)
                 for odd in odds:
                     if odd:
                         for k, v in odd.items():

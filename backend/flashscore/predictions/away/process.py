@@ -2,6 +2,10 @@ import pandas as pd
 import numpy as np
 from .predictions import tf_train, tf_predict
 from sqlalchemy import create_engine
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 def predict_away_result(df: pd.DataFrame, pred: pd.DataFrame) -> None:
     df = df.sort_values("match_time")
@@ -40,6 +44,6 @@ def save_predictions(away: pd.DataFrame) -> None:
     away["win"] = pd.NA
     away["home_score"] = pd.NA
     away["away_score"] = pd.NA
-
-    conn = create_engine("postgresql+psycopg2://postgres:your_password@localhost:5432/final")
-    away[save_cols].to_sql("away_pred", con=conn, if_exists="append", index=False)
+   
+    conn = create_engine(os.getenv("DB_CONN"))
+    away[save_cols].to_sql(os.getenv("AWAY_TABLE"), con=conn, if_exists="append", index=False)

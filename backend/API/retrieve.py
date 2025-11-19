@@ -2,6 +2,11 @@ import pandas as pd
 import math
 from datetime import datetime, timedelta
 from sqlalchemy import create_engine
+from dotenv import load_dotenv
+import os
+
+
+load_dotenv()
 
 def retrieve_predictions(engine, tb, date):
     query = f"""
@@ -13,9 +18,7 @@ def retrieve_predictions(engine, tb, date):
 
 def assign_prediction_obj(df, pred, odds):
     df["match_time"] = (
-        pd.to_datetime(df["match_time"])
-        .dt.tz_localize("America/New_York")  
-        .dt.tz_convert("UTC")                
+        pd.to_datetime(df["match_time"]).dt.tz_localize("America/New_York").dt.tz_convert("UTC")  
     )
     records = []
     for l, k, j, m, n, i, o, p, q, r, s, t, u, v in zip(df["home_team"], df["away_team"], 
@@ -36,22 +39,22 @@ def todays_predictions(day):
     predictions = []
     date = (datetime.now() - timedelta(days=day)).date()
     print(date)
-    engine = create_engine("postgresql+psycopg2://postgres:your_password@localhost:5432/final")
+    engine = create_engine(os.getenv("DB_CONN"))
 
-    home_wins = retrieve_predictions(engine, "home_pred", date)
+    home_wins = retrieve_predictions(engine, os.getenv("HOME_TABLE"), date)
     print(home_wins)
     home_wins = home_wins.drop_duplicates(subset=["home_team", "away_team", "match_time"])
     odds = home_wins["odds"].values
     predictions.extend(assign_prediction_obj(home_wins, "home win", odds))
     total_odds = math.prod(odds)
 
-    away_wins = retrieve_predictions(engine, "away_pred", date)
+    away_wins = retrieve_predictions(engine, os.getenv("AWAY_TABLE"), date)
     away_wins = away_wins.drop_duplicates(subset=["home_team", "away_team", "match_time"])
     odds = away_wins["odds"].values
     predictions.extend(assign_prediction_obj(away_wins, "away win", odds))
     total_odds = total_odds * math.prod(odds)
 
-    over = retrieve_predictions(engine, "over_pred", date)
+    over = retrieve_predictions(engine, os.getenv("OVER_TABLE"), date)
     over = over.drop_duplicates(subset=["home_team", "away_team", "match_time"])
     odds = over["odds"].values
     predictions.extend(assign_prediction_obj(over, "over 2.5", odds))

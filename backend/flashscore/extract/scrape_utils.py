@@ -1,26 +1,26 @@
 from datetime import datetime
-from utils.logger import logger
+from flashscore.utils.logger import logger
 
 BLOCKED_RESOURCES = {"image", "stylesheet", "font", "media", "other"}
 BLOCKED_PATTERNS = ["google-analytics", "ads.", "doubleclick", "tracking", "tracker"]
 
-async def block_junk(route, request):
+def block_junk(route, request):
     try:
         if request.resource_type in BLOCKED_RESOURCES or any(pattern in request.url for pattern in BLOCKED_PATTERNS):
-            await route.abort()
+            route.abort()
         else:
-            await route.continue_()
+            route.continue_()
     except Exception as e:
         logger.debug(f"Error in block_junk for {request.url}: {e}")
-        await route.continue_()
+        route.continue_()
 
-async def get_header_items(page):
-    header_items = await page.locator(".detail__breadcrumbs li").all()
+def get_header_items(page):
+    header_items = page.locator(".detail__breadcrumbs li").all()
     country, league, round = None, None, None
     if len(header_items) >= 3:
         try:
-            country = (await header_items[1].inner_text()).strip().lower()
-            league_round = (await header_items[2].inner_text()).strip().lower()
+            country = (header_items[1].inner_text()).strip().lower()
+            league_round = (header_items[2].inner_text()).strip().lower()
             league, round = split_string(league_round)
         except Exception as e:
             logger.debug(f" get_header_items - {e}")
@@ -90,40 +90,40 @@ def parse_number(val):
     except ValueError:
         return None
     
-async def get_team_names(page):
+def get_team_names(page):
     home_team, away_team = None, None
     try:
-        home_team = await page.locator(".duelParticipant__home .participant__participantName a").first.text_content()
+        home_team = page.locator(".duelParticipant__home .participant__participantName a").first.text_content()
         home_team = home_team.strip() if home_team else None
-        away_team = await page.locator(".duelParticipant__away .participant__participantName a").first.text_content()
+        away_team = page.locator(".duelParticipant__away .participant__participantName a").first.text_content()
         away_team = away_team.strip() if away_team else None
     except Exception as e:
         logger.debug(f"get_team_names - {e}")
 
     return home_team, away_team
 
-async def get_score(page):
+def get_score(page):
     home_score, away_score = None, None
     try:
-        score = await page.locator(".detailScore__wrapper").first.text_content()
+        score = page.locator(".detailScore__wrapper").first.text_content()
         home_score, away_score = split_score(score)
     except Exception as e:
         logger.debug(f"get_score: {e}")
 
     return home_score, away_score
 
-async def get_match_time(page):
+def get_match_time(page):
     match_time = None
     try:
-        time_str = await page.locator(".duelParticipant__startTime div").first.text_content()
+        time_str = page.locator(".duelParticipant__startTime div").first.text_content()
         match_time = datetime.strptime(time_str.strip(), "%d.%m.%Y %H:%M")
     except Exception as e:
         logger.debug(f"get_match_time - {e}")
     return match_time
 
-async def get_over_odds(page):
+def get_over_odds(page):
     try:
-        rows = await page.evaluate("""
+        rows = page.evaluate("""
         () => {
             return Array.from(document.querySelectorAll(".ui-table__row")).map(row => {
                 const oddName = row.querySelector(".wcl-oddsCell_qJ5md")?.textContent?.trim();
@@ -147,9 +147,9 @@ async def get_over_odds(page):
         logger.debug(f"get_over_odds: {e}")
         return []
 
-async def get_1x2_odds(page):
+def get_1x2_odds(page):
     try:
-        rows = await page.evaluate("""
+        rows = page.evaluate("""
         () => Array.from(document.querySelectorAll(".ui-table__row")).map(row => {
             const odds = Array.from(row.querySelectorAll(".oddsCell__odd")).map(e => e.textContent?.trim());
             return { home_win: odds[0], draw: odds[1], away_win: odds[2] };
@@ -160,9 +160,9 @@ async def get_1x2_odds(page):
         logger.debug(f"get_1x2_odds: {e}")
         return []
 
-async def get_btts_odds(page):
+def get_btts_odds(page):
     try:
-        rows = await page.evaluate("""
+        rows = page.evaluate("""
         () => Array.from(document.querySelectorAll(".ui-table__row")).map(row => {
             const odds = Array.from(row.querySelectorAll(".oddsCell__odd")).map(e => e.textContent?.trim());
             return { yes: odds[0], no: odds[1] };
@@ -173,9 +173,9 @@ async def get_btts_odds(page):
         logger.debug(f"get_btts_odds: {e}")
         return []
         
-async def get_double_chance_odds(page):
+def get_double_chance_odds(page):
     try:
-        rows = await page.evaluate("""
+        rows = page.evaluate("""
         () => Array.from(document.querySelectorAll(".ui-table__row")).map(row => {
             const odds = Array.from(row.querySelectorAll(".oddsCell__odd")).map(e => e.textContent?.trim());
             return { "1x": odds[0], "12": odds[1], "x2": odds[2] };

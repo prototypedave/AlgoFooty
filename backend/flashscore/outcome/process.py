@@ -2,11 +2,15 @@ import pandas as pd
 from datetime import datetime, timedelta
 from sqlalchemy import Table, MetaData, update
 from sqlalchemy import create_engine
-import asyncio
+import os
+from dotenv import load_dotenv
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
-async def retrieve_data_for_results(engine, days):
+load_dotenv()
+
+def retrieve_data_for_results(engine, days):
     prev = (datetime.now() - timedelta(days=days)).date()
-    print(prev)
     query = f"""
         SELECT *
         FROM new_league
@@ -15,9 +19,19 @@ async def retrieve_data_for_results(engine, days):
     return pd.read_sql(query, con=engine)
 
 
-async def update_results(days: int = 1):
-    engine = create_engine("postgresql+psycopg2://postgres:your_password@localhost:5432/final")
-    df = await retrieve_data_for_results(engine, days)
+def days_offset():
+    now_utc = datetime.utcnow()
+    now_ny = now_utc.replace(tzinfo=ZoneInfo("UTC")).astimezone(ZoneInfo("America/New_York"))
+    if now_ny.hour >= 0:
+        return 1
+    return 0
+
+
+def update_results():
+    days = days_offset()
+    engine = create_engine(os.getenv("DB_CONN"))
+    df = retrieve_data_for_results(engine, days)
+    print(df)
     def safe_numeric(df, cols):
         for c in cols:
             df[c] = pd.to_numeric(df[c], errors="coerce")
@@ -36,6 +50,7 @@ async def update_results(days: int = 1):
         axis=1
     )
     update_table(engine, "home_pred", home)
+    print(home["home_score"])
 
     # --- AWAY ---
     away = pd.read_sql(query_const("away_pred", days), con=engine)
@@ -65,8 +80,7 @@ async def update_results(days: int = 1):
     )
     update_table(engine, "over_pred", over)
 
-    
-    
+ 
 def query_const(table, days):
     prev = (datetime.now() - timedelta(days=days)).date()
     return f"""
@@ -124,7 +138,5 @@ def update_table(engine, tb, df):
 
 
 if __name__ == "__main__":
-    async def main():
-        await update_results()
-
-    asyncio.run(main())
+    update_results()
+    print("processed")

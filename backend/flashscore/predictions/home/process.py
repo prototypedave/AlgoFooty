@@ -3,6 +3,10 @@ import numpy as np
 from .predictions import tf_train, tf_predict, torch_train, torch_predict
 from sklearn.preprocessing import StandardScaler
 from sqlalchemy import create_engine
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 def predict_home_result(df: pd.DataFrame, pred:pd.DataFrame) -> None:
     df = df.sort_values("match_time")
@@ -50,8 +54,8 @@ def save_predictions(tf_home, tf_dependant, torch_home, torch_dependant):
     home["home_score"] = pd.NA
     home["away_score"] = pd.NA
    
-    conn = create_engine("postgresql+psycopg2://postgres:your_password@localhost:5432/final")
-    home[save_cols].to_sql("home_pred", con=conn, if_exists="append", index=False)
+    conn = create_engine(os.getenv("DB_CONN"))
+    home[save_cols].to_sql(os.getenv("HOME_TABLE"), con=conn, if_exists="append", index=False)
 
 
 def assemble_prev_results(df: pd.DataFrame, pref="h"):

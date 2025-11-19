@@ -4,7 +4,11 @@ from datetime import datetime, timedelta
 from .home.process import predict_home_result
 from .away.process import predict_away_result
 from .over.process import predict_over_2_5
+from dotenv import load_dotenv
+import os
 
+
+load_dotenv()
 
 DROP_COLS = ["home_expected_goals_(xg)", "away_expected_goals_(xg)", "home_big_chances",
              "away_big_chances", "home_passes", "away_passes", "home_xg_on_target_(xgot)",
@@ -35,8 +39,8 @@ def run():
 
 def get_data_records() -> tuple:
     from sqlalchemy import create_engine
-    engine = create_engine("postgresql+psycopg2://postgres:your_password@localhost:5432/final")
-    df = pd.read_sql("SELECT * FROM new_league", con=engine)
+    engine = create_engine(os.getenv("DB_CONN"))
+    df = pd.read_sql(f"SELECT * FROM {os.getenv('LEAGUE_DB_TABLE')}", con=engine)
     today = (datetime.now() - timedelta(days=0)).date()
     query = f"""
         SELECT *

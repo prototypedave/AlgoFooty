@@ -1,6 +1,6 @@
-from utils.logger import logger
+from flashscore.utils.logger import logger
 
-async def navigate_to_page(page, future, days=0):
+def navigate_to_page(page, future, days=0):
     if days > 7:
         logger.error(f"{days} days is larger than the allowed navigation days, defaulting to 7")
         days = 7
@@ -8,27 +8,27 @@ async def navigate_to_page(page, future, days=0):
     aria_label = 'Next day' if future else 'Previous day'
     for day in range(days):
         try:
-            btn = await page.wait_for_selector(f'button[aria-label="{aria_label}"]', timeout=5000)
+            btn = page.wait_for_selector(f'button[aria-label="{aria_label}"]', timeout=5000)
             if not btn:
                 logger.error(f'FLASHSCORE: Navigation button "{aria_label}" not found!')
                 continue
 
-            current_date = await get_flashscore_date(page)
+            current_date = get_flashscore_date(page)
 
-            await btn.scroll_into_view_if_needed()
-            await page.wait_for_timeout(500)
-            await btn.click(timeout=5000)
+            btn.scroll_into_view_if_needed()
+            page.wait_for_timeout(500)
+            btn.click(timeout=5000)
 
-            await page.wait_for_function(
+            page.wait_for_function(
                 """(prevDate) => {
                     const el = document.querySelector(".wcl-button_mrGAO");
                     return el && el.textContent.trim() !== prevDate;
                 }""",
                 arg=current_date,
-                timeout=10000
+                timeout=8000
             )
 
-            new_date = await get_flashscore_date(page)
+            new_date = get_flashscore_date(page)
             logger.info(f"FLASHSCORE : Navigated successfully: {new_date}")
 
         except Exception as e:
@@ -38,10 +38,10 @@ async def navigate_to_page(page, future, days=0):
     return page
 
 
-async def get_flashscore_date(page):
+def get_flashscore_date(page):
     try:
-        el = await page.wait_for_selector(".wcl-button_mrGAO", timeout=5000)
-        return (await el.text_content()).strip()
+        el = page.wait_for_selector(".wcl-button_mrGAO", timeout=5000)
+        return (el.text_content()).strip()
     except:
         return "Unknown"
 

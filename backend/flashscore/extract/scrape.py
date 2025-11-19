@@ -1,157 +1,163 @@
 from datetime import datetime, timedelta
-from extract.event import get_events
-from extract.game import process_game
-from extract.navigate import navigate_to_page
-from extract.scrape_utils import block_junk
-from playwright.async_api import async_playwright
-from sqlalchemy import create_engine, MetaData, Table
-from sqlalchemy.dialects.postgresql import insert
-from typing import List, Dict
-from utils.logger import logger
-import asyncio
+from flashscore.extract.event import get_events
+from flashscore.extract.game import process_game
+from flashscore.extract.navigate import navigate_to_page
+from flashscore.extract.scrape_utils import block_junk
+from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
+from sqlalchemy import create_engine
+from flashscore.utils.logger import logger
 import pandas as pd
+from typing import List, Dict, Tuple
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import urllib.parse
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 class FlashscoreApp:
-    def __init__(self, concurrency: int=3) -> None:
-        self.browser = None
-        self.context = None
-        self.playwright = None
-        self.semaphore = asyncio.Semaphore(concurrency)
+    def __init__(self, concurrency: int = 3) -> None:
+        self.concurrency = concurrency
         self.batch: List[Dict] = []
         self.pred_batch: List[Dict] = []
         self.batch_size = 10
-        self.is_future = False
-        self.engine = None  
+        self.engine = None
 
-    async def start(self) -> None:
+    def start(self) -> None:
         try:
-            self.playwright = await async_playwright().start()
-            self.browser = await self.playwright.chromium.launch(
-                headless=True, args=["--no-sandbox", "--disable-dev-shm-usage"]
-            )
-            self.context = await self.browser.new_context(
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-                timezone_id="America/New_York"
-            )
-            self.engine = create_engine("postgresql+psycopg2://postgres:your_password@localhost:5432/final")
-            logger.info("FLASHSCORE: Success:- Flashscore App started")
+            self.engine = create_engine(os.getenv("DB_CONN"))
+            logger.info("FLASHSCORE: Success:- Flashscore App started (DB connected)")
         except Exception as e:
-            logger.info(f"FLASHSCORE: Error:- {e}")
+            logger.error(f"DB: Connection failed: {e}")
             raise
 
-    async def save_batch(self) -> None:
+    def save_batch(self) -> None:
         try:
-            games = pd.DataFrame(self.batch)
-            games = games.drop_duplicates(subset=["home_team", "away_team", "match_time"])
-            
-            if not games.empty:
-                games.to_sql("new_league", con=self.engine, if_exists="append", index=False)
-                '''metadata = MetaData()
-                table = Table("new_league", metadata, autoload_with=self.engine)
-
-                with self.engine.begin() as conn:
-                    for _, row in games.iterrows():
-                        stmt = insert(table).values(**row.to_dict())
-                        
-                        stmt = stmt.on_conflict_do_update(
-                            index_elements=["home_team", "away_team", "match_time"],
-                            set_={
-                                col: stmt.excluded[col]
-                                for col in row.index
-                                if col not in ["home_team", "away_team", "match_time"]
-                            },
-                        )
-
-                        conn.execute(stmt)'''
-
-            logger.info("DB: updated games table")
+            if self.batch:
+                games = pd.DataFrame(self.batch).drop_duplicates(subset=["home_team", "away_team", "match_time"])
+                if not games.empty:
+                    games.to_sql(os.getenv("LEAGUE_DB_TABLE"), con=self.engine, if_exists="append", index=False)
+                    logger.info(f"DB: Flushed {len(games)} games to new_league")
+                self.batch.clear()
 
             if self.pred_batch:
                 pred = pd.DataFrame(self.pred_batch)
-                pred.to_sql("new_pred", con=self.engine, if_exists="append", index=False)
-            
-            self.batch.clear()
-            self.pred_batch.clear()
+                pred.to_sql(os.getenv("PREDICTION_TABLE"), con=self.engine, if_exists="append", index=False)
+                logger.info(f"DB: Flushed {len(pred)} predictions to new_pred")
+                self.pred_batch.clear()
 
         except Exception as e:
-            logger.error(f"DB: Error:- {e}")
-        
-    async def stop(self):
-        try:
-            if self.context:
-                await self.context.close()
-            if self.browser:
-                await self.browser.close()
-            if self.playwright:
-                await self.playwright.stop()
-            await self.save_batch()
-            self.engine = None
-            logger.info("FLASHSCORE: Browser stopped successfully.")
-        except Exception as e:
-            print(f"{e}")
+            logger.error(f"DB: Save error: {e}")
 
-    async def run_app(self, days=0):
-        url = "https://www.flashscore.com/"
-        if not self.context:
-            raise RuntimeError("App not started yet")   
-        page = await self.context.new_page()
-        if not page:
-            raise RuntimeError("Failed to create new page")
-        
+    def stop(self):
+        self.save_batch()
+        self.engine = None
+        logger.info("FLASHSCORE: App stopped and final batch saved.")
+
+    def run_app(self, days: int = 0):
+        url = os.getenv("SCRAPE_URL")
+        playwright = sync_playwright().start()
+        browser = None
+        context = None
+
         try:
-            try:
-                await page.route("**/*", block_junk)
-            except Exception as e:
-                logger.error(f"FLASHSCORE: Failed to configure routing: {e}")
-            
-            self.is_future = True if days >= 0 else False
-            await page.goto(url)
+            browser = playwright.chromium.launch(
+                headless=True,
+                args=["--no-sandbox", "--disable-dev-shm-usage"]
+            )
+
+            user_agent = (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/126.0.0.0 Safari/537.36"
+            )
+
+            context = browser.new_context(
+                user_agent=user_agent,
+                timezone_id="America/New_York"
+            )
+
+            page = context.new_page()
+            page.route("**/*", block_junk)
+            page.goto(url, timeout=7000)
+
+            is_future = days >= 0
             days = abs(days)
             if days > 0:
-                await navigate_to_page(page, self.is_future, days)
-            game_links = await get_events(page)
-            await self.load_events(game_links)
+                navigate_to_page(page, is_future, days)
+
+            game_links = get_events(page)
+            page.close()
+
+            logger.info(f"Found {len(game_links)} match links. Starting parallel scraping...")
+            self._scrape_parallel(game_links, user_agent)
 
         except Exception as e:
-            logger.error(f"FLASHSCORE: Error:- {e}")
-        
-    async def load_events(self, events):
-        batch_size = 5
-        for i in range(0, len(events), batch_size):
-            batch = events[i:i + batch_size]
-            tasks = [self.load_game(link) for link in batch]
-            await asyncio.gather(*tasks, return_exceptions=True)
+            logger.error(f"FLASHSCORE: Fatal error: {e}")
+        finally:
+            if context:
+                context.close()
+            if browser:
+                browser.close()
+            playwright.stop()
 
-    async def load_game(self, link):
-        async with self.semaphore:
-            page = await self.context.new_page()
-            if not page:
-                logger.error(f"GAME: Warn:- failed to create page for {link}")
-                return None
+    def _scrape_parallel(self, links: List[str], user_agent: str):
+        def worker(link: str) -> Tuple[List[Dict], Dict | None]:
+            p = sync_playwright().start()
             try:
-                await page.route("**/*", block_junk)
-                await page.goto(link, timeout=10000)
-                prev_games, future_game = await process_game(page)
-                if prev_games:
-                    self.batch += prev_games
-                    if len(self.batch) >= self.batch_size:
-                        await self.save_batch()
-                if future_game:
-                    self.pred_batch.append(future_game)
-                
-            except Exception as e:
-                logger.error(f"GAME: Error processing {link}: {e}")
-                return None
+                browser = p.chromium.launch(
+                    headless=True,
+                    args=["--no-sandbox", "--disable-dev-shm-usage"]
+                )
+                context = browser.new_context(
+                    user_agent=user_agent,
+                    timezone_id="America/New_York"
+                )
+                page = context.new_page()
+                page.route("**/*", block_junk)
+
+                try:
+                    page.goto(link, wait_until="domcontentloaded", timeout=10000)
+                    prev_games, future_game = process_game(page)
+                    return prev_games or [], future_game
+                except PWTimeout:
+                    logger.warning(f"Timeout: {link}")
+                    return [], None
+                except Exception as e:
+                    logger.error(f"Error processing {link}: {e}")
+                    return [], None
+                finally:
+                    page.close()
+                    context.close()
+                    browser.close()
             finally:
-                await page.close()
-    
+                p.stop()
+            return [], None
+
+        with ThreadPoolExecutor(max_workers=self.concurrency) as executor:
+            futures = {executor.submit(worker, link): link for link in links}
+
+            for idx, future in enumerate(as_completed(futures), 1):
+                link = futures[future]
+                try:
+                    prev_games, future_game = future.result()
+                    if prev_games:
+                        self.batch.extend(prev_games)
+                    if future_game:
+                        self.pred_batch.append(future_game)
+
+                    if len(self.batch) >= self.batch_size:
+                        self.save_batch()
+
+                    logger.info(f"[{idx}/{len(links)}] DONE – {urllib.parse.urlparse(link).path.split('/')[-2]}")
+                except Exception as e:
+                    logger.error(f"Future failed for {link}: {e}")
+
+        self.save_batch()
+
 
 if __name__ == "__main__":
-    async def main():
-        app = FlashscoreApp(concurrency=2)
-        await app.start()
-        await app.run_app(days=0)
-        
-        await app.stop()
-
-    asyncio.run(main())
+    app = FlashscoreApp(concurrency=2)
+    app.start()
+    app.run_app(days=-2)
+    app.stop()
