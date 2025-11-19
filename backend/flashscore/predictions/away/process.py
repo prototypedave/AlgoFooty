@@ -41,7 +41,5 @@ def save_predictions(away: pd.DataFrame) -> None:
     away["home_score"] = pd.NA
     away["away_score"] = pd.NA
 
-    # update club icons !!!
-   
     conn = create_engine("postgresql+psycopg2://postgres:your_password@localhost:5432/final")
     away[save_cols].to_sql("away_pred", con=conn, if_exists="append", index=False)

@@ -144,24 +144,13 @@ class FlashscoreApp:
                 return None
             finally:
                 await page.close()
-
-    async def get_data_from_db(self):
-        df = pd.read_sql("SELECT * FROM league_games", con=self.engine)
-        today = (datetime.now() - timedelta(days=2)).date()
-        query = f"""
-            SELECT *
-            FROM new_league
-            WHERE DATE(match_time) = '{today}'
-            """
-        pred = pd.read_sql(query, con=self.engine)
-        return df, pred
     
 
 if __name__ == "__main__":
     async def main():
         app = FlashscoreApp(concurrency=2)
         await app.start()
-        await app.run_app(days=-2)
+        await app.run_app(days=0)
         
         await app.stop()
 
