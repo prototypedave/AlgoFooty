@@ -12,6 +12,8 @@ AlgoFooty is a full-stack football analytics platform that automatically scrapes
 
 ### Mobile view Page  
 ![Predictions Page](./docs/screen/predictioons.png)
+
+
 ![Backend Logs](./docs/screen/previous.png)
 
 
@@ -47,7 +49,7 @@ AlgoFooty is a full-stack football analytics platform that automatically scrapes
 
 ## Project Structure
 
-```BASH
+```bash
 AlgoFooty/
 │
 ├── backend/
@@ -66,28 +68,28 @@ AlgoFooty/
 ```
 ---
 
-# Installation & Setup
+## Installation & Setup
 
-## Clone the Repository
+### Clone the Repository
 ```bash
 git clone https://github.com/prototypedave/AlgoFooty.git
 cd AlgoFooty
 ```
 
-# Backend Setup
+### Backend Setup
 
-## Create a virtual environment
+#### Create a virtual environment
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-## Install dependencies
+#### Install dependencies
 ```bash
 pip install -r backend/requirements.txt
 ```
 
-## Start the API
+#### Start the API
 ```bash
 uvicorn API.main:app --reload
 ```
@@ -95,7 +97,7 @@ uvicorn API.main:app --reload
 Backend will run at:
 http://localhost:8000
 
-# Frontend Setup
+## Frontend Setup
 ```bash
 cd frontend
 npm install
@@ -105,32 +107,28 @@ npm run dev
 Frontend will run at:
 http://localhost:3000
 
-# How It Works
-## 1. Scraping
+## How It Works
+### 1. Scraping
 
-Scrapes fixtures, stats, standings, odds
+- Scrapes fixtures, stats, standings, odds
+- Saves structured match data
 
-Saves structured match data
+### 2. Feature Processing
 
-## 2. Feature Processing
+- Cleans and transforms data
+- Builds model-ready feature vectors
 
-Cleans and transforms data
+### 3. Prediction Pipeline
 
-Builds model-ready feature vectors
+- Runs deep-learning models
+- Generates probabilities & outcomes
 
-## 3. Prediction Pipeline
+### 4. Frontend Rendering
 
-Runs deep-learning models
-
-Generates probabilities & outcomes
-
-## 4. Frontend Rendering
-
-Displays final predictions
-
-League, country, status & badges included
+- Displays final predictions
+- League, country, status & badges included
 
 
-# Contributing
+## Contributing
 Pull requests and issues are welcome.
 For major feature changes, please open an issue first.
