@@ -5,16 +5,16 @@ AlgoFooty is a full-stack football analytics platform that automatically scrapes
 
 ---
 
-# Screenshots
+## Screenshots
 
 ### Home Dashboard  
-![Frontend Screenshot](./assets/screens/frontend-dashboard.png)
+![Frontend Screenshot](./docs/screen/home.png)
 
 ### Match Predictions Page  
-![Predictions Page](./assets/screens/predictions-page.png)
+![Predictions Page](./docs/screen/predictions.png)
 
 ### Backend Processing (Terminal View)  
-![Backend Logs](./assets/screens/backend-processing.png)
+![Backend Logs](./docs/screen/previous.png)
 
 ---
 
