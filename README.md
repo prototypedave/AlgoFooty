@@ -7,18 +7,17 @@ AlgoFooty is a full-stack football analytics platform that automatically scrapes
 
 ## Screenshots
 
-### Home Dashboard  
+### Match Predictions Page  
 ![Frontend Screenshot](./docs/screen/home.png)
 
-### Match Predictions Page  
-![Predictions Page](./docs/screen/predictions.png)
-
-### Backend Processing (Terminal View)  
+### Mobile view Page  
+![Predictions Page](./docs/screen/predictioons.png)
 ![Backend Logs](./docs/screen/previous.png)
+
 
 ---
 
-# Features
+## Features
 
 ### Automated Flashscore Scraping
 - Fully automated match extraction  
@@ -46,8 +45,9 @@ AlgoFooty is a full-stack football analytics platform that automatically scrapes
 
 ---
 
-# Project Structure
+## Project Structure
 
+```BASH
 AlgoFooty/
 │
 ├── backend/
@@ -62,8 +62,8 @@ AlgoFooty/
 │ ├── pages/
 │ └── styles/
 │
-└── README.md
-
+└── README.md'
+```
 ---
 
 # Installation & Setup
