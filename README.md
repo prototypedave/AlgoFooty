@@ -12,8 +12,6 @@ AlgoFooty is a full-stack football analytics platform that automatically scrapes
 
 ### Mobile view Page  
 ![Predictions Page](./docs/screen/predictioons.png)
-
-
 ![Backend Logs](./docs/screen/previous.png)
 
 
