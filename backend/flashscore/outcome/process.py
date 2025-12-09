@@ -31,7 +31,6 @@ def update_results():
     days = days_offset()
     engine = create_engine(os.getenv("DB_CONN"))
     df = retrieve_data_for_results(engine, days)
-    print(df)
     def safe_numeric(df, cols):
         for c in cols:
             df[c] = pd.to_numeric(df[c], errors="coerce")
@@ -50,7 +49,6 @@ def update_results():
         axis=1
     )
     update_table(engine, "home_pred", home)
-    print(home["home_score"])
 
     # --- AWAY ---
     away = pd.read_sql(query_const("away_pred", days), con=engine)

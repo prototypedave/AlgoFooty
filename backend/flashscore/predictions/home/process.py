@@ -27,19 +27,19 @@ def predict_home_result(df: pd.DataFrame, pred:pd.DataFrame) -> None:
     feat_home_away_pred = np.concatenate((feat_home_pred, feat_away_pred), axis=-1)
     
     model = tf_train(feat_home_away_df, feat_h2h_df, feat_odd_df, feat_context_df, df["match_home"])
-    tf_home, tf_dependant = tf_predict(model, feat_home_away_pred, feat_h2h_pred, feat_odd_pred, feat_context_pred, pred)
+    tf_home, tf_dependant, tf_sure = tf_predict(model, feat_home_away_pred, feat_h2h_pred, feat_odd_pred, feat_context_pred, pred)
    
     scaler = StandardScaler()
     feat_context_df = scaler.fit_transform(feat_context_df)
     feat_context_pred = scaler.transform(feat_context_pred)
     model_torch = torch_train(feat_home_away_df, feat_h2h_df, feat_odd_df, feat_context_df, df["match_home"].values)
-    torch_home, torch_dependant = torch_predict(model_torch, feat_home_away_pred, feat_h2h_pred, feat_odd_pred, feat_context_pred, pred)
+    torch_home, torch_dependant, torch_sure = torch_predict(model_torch, feat_home_away_pred, feat_h2h_pred, feat_odd_pred, feat_context_pred, pred)
 
-    #print(tf_home, torch_home)
-    save_predictions(tf_home, tf_dependant, torch_home, torch_dependant)
+    save_predictions(tf_home, tf_dependant, torch_home, torch_dependant, os.getenv("HOME_TABLE"))
+    save_predictions(tf_sure, tf_dependant, torch_sure, torch_dependant, os.getenv("HOME_SURE_TABLE"))
 
 
-def save_predictions(tf_home, tf_dependant, torch_home, torch_dependant):
+def save_predictions(tf_home, tf_dependant, torch_home, torch_dependant, table):
     save_cols = ["home_team", "away_team", "league", "round", "country", "odds", "match_time", "win", "home_score", "away_score", "proba", "home_img", "away_img"]
     if tf_dependant and not torch_dependant:
         home = tf_home
@@ -53,9 +53,9 @@ def save_predictions(tf_home, tf_dependant, torch_home, torch_dependant):
     home["win"] = pd.NA
     home["home_score"] = pd.NA
     home["away_score"] = pd.NA
-   
+ 
     conn = create_engine(os.getenv("DB_CONN"))
-    home[save_cols].to_sql(os.getenv("HOME_TABLE"), con=conn, if_exists="append", index=False)
+    home[save_cols].to_sql(table, con=conn, if_exists="append", index=False)
 
 
 def assemble_prev_results(df: pd.DataFrame, pref="h"):

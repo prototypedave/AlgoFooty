@@ -55,7 +55,7 @@ def process_records():
     df, pred = get_data_records()
     df, pred = clean(df, pred)
     df, pred = get_results(df, pred)
-    predict_home_result(df, pred)   
+    predict_home_result(df, pred)
     predict_away_result(df, pred)
     predict_over_2_5(df, pred)
 
@@ -76,7 +76,7 @@ def get_odds_probabilities(df: pd.DataFrame) -> pd.DataFrame:
     df["draw_bias"] = df["draw_prob"] / (df["home_prob"] + df["away_prob"]) # not efficient for home win
     df["log_odds_ratio"] = np.log(df["1x2_home_win"] / df["1x2_away_win"])
 
-    probs = df[["home_prob", "draw_prob", "away_prob"]].clip(1e-10, 1)  # avoid log(0)
+    probs = df[["home_prob", "draw_prob", "away_prob"]].clip(1e-10, 1)  
     df["entropy"] = -(
         (probs["home_prob"] * np.log(probs["home_prob"])) +
         (probs["draw_prob"] * np.log(probs["draw_prob"])) +
@@ -213,6 +213,7 @@ def clean(d: pd.DataFrame, pred: pd.DataFrame) -> pd.DataFrame:
     d = d.drop(columns=DROP_COLS)
     d[NUN_COLS] = d[NUN_COLS].fillna(0)
     d = d.dropna()
+    #d = d.sort_values(by="match_time").tail(5000)
     pred = pred.dropna()
     return d, pred
 

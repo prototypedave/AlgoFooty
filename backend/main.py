@@ -1,4 +1,4 @@
-from API.retrieve import todays_predictions
+from API.retrieve import todays_predictions, todays_sure_predictions
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from flashscore.extract.scrape import FlashscoreApp
@@ -8,11 +8,13 @@ from flashscore.predictions.processing import run
 from flashscore.outcome.process import update_results
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
+import logging
+import traceback
 
 app = FastAPI()
 
 origins = [
-    "http://localhost:3000", "http://3.109.177.65:3000"
+    "http://localhost:3000", "http://95.216.204.47:3000"
 ]
 
 app.add_middleware(
@@ -23,6 +25,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+logger = logging.getLogger("app")
+handler = logging.StreamHandler()
+handler.setLevel(logging.DEBUG)
+formatter = logging.Formatter(
+    "%(asctime)s - %(levelname)s - %(message)s"
+)
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+logger.setLevel(logging.DEBUG)
+
+
+def log_exception(e):
+    logger.error("Exception occurred:\n" + traceback.format_exc())
+
+
 @app.get("/")
 def read_root():
     return {"Popup Predicts Home"}
@@ -30,7 +47,20 @@ def read_root():
 
 @app.get("/gen-predictions/")  
 def get_predictions(day: int | None = 0):
-    return todays_predictions(day)
+    try:
+        return todays_predictions(day)
+    except Exception as e:
+        log_exception(e)
+        return {}
+
+
+@app.get("/sure-predictions/")
+def get_sure_predictions(day: int | None = 0):
+    try:
+        return todays_sure_predictions(day)
+    except Exception as e:
+        log_exception(e)
+        return {}
 
 
 def day_offset():
@@ -41,15 +71,18 @@ def day_offset():
     return 0
 
 def run_matches():
-    flash = FlashscoreApp(concurrency=2)
-    flash.start()
-    flash.run_app(days=0)    
-    flash.stop()
-    run()
-    flash.start()
-    flash.run_app(days=-day_offset())
-    flash.stop()
-    update_results()
+    try:
+        flash = FlashscoreApp(concurrency=2)
+        flash.start()
+        flash.run_app(days=0)    
+        flash.stop()
+        run()
+        flash.start()
+        flash.run_app(days=-day_offset())
+        flash.stop()
+        update_results()
+    except Exception as e:
+        log_exception(e)
 
 
 

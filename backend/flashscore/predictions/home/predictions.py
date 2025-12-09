@@ -1,3 +1,4 @@
+
 from .deep_tf import train_tf_model
 from .deep_torch import train_model
 import pandas as pd
@@ -43,11 +44,13 @@ def torch_predict(model, seq_home_away, seq_h2h, odds, context, pred_df):
 
 def home_selection(pred_df: pd.DataFrame) -> tuple:
     pred_df = pred_df[pred_df["proba"] > 0.55].copy()
+    pred_df.sort_values("proba", ascending=True)
     winner  = pred_df[(pred_df["h_win_0"] == 1) & (pred_df["h2h_ovr"] > 0.5) & (pred_df["h2h_win_0"] == 1)].copy()
     sub = True
     if winner.empty:
-        pred_df.sort_values("proba", ascending=True).head(20)
+        pred_df = pred_df.head(10)
         winner = pred_df[pred_df["fav_diff"] > 0.5].copy()
         sub = False
-    
-    return winner, sub
+
+    sure = winner[(winner["home_r_w_rate"] > 0.7) & (winner["h2h_r_w_rate"] >= 0.7)].copy()
+    return winner, sub, sure

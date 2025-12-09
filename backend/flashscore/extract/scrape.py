@@ -157,7 +157,7 @@ class FlashscoreApp:
 
 
 if __name__ == "__main__":
-    app = FlashscoreApp(concurrency=2)
+    app = FlashscoreApp(concurrency=4)
     app.start()
-    app.run_app(days=-2)
+    app.run_app(days=0)
     app.stop()

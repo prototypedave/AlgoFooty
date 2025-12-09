@@ -26,7 +26,10 @@ def predict_away_result(df: pd.DataFrame, pred: pd.DataFrame) -> None:
     
     model = tf_train(feat_home_away_df, feat_h2h_df, feat_odd_df, feat_context_df, df["match_away"].values)
     tf_away = tf_predict(model, feat_home_away_pred, feat_h2h_pred, feat_odd_pred, feat_context_pred, pred)
-    save_predictions(tf_away)
+    sure = tf_away[(tf_away["away_r_w_rate"] >= 0.7) & (tf_away["h2h_r_l_rate"])].copy()
+    save_predictions(tf_away, os.getenv("AWAY_TABLE"))
+    save_predictions(sure, os.getenv("AWAY_SURE_TABLE"))
+    #print(sure["home_team"])
 
 
 def assemble_prev_results(df: pd.DataFrame, pref="h"):
@@ -36,7 +39,7 @@ def assemble_prev_results(df: pd.DataFrame, pref="h"):
     return np.stack((df[cols[0]].values, df[cols[1]].values, df[cols[2]].values), axis=-1) # win, draw, lost
 
 
-def save_predictions(away: pd.DataFrame) -> None:
+def save_predictions(away: pd.DataFrame, table) -> None:
     save_cols = ["home_team", "away_team", "league", "round", "country", "odds", "match_time", "win", "home_score", "away_score", "proba", "home_img", "away_img"]
     away = away.drop_duplicates(subset=["home_team", "away_team", "match_time"], keep="first")
         
@@ -46,4 +49,4 @@ def save_predictions(away: pd.DataFrame) -> None:
     away["away_score"] = pd.NA
    
     conn = create_engine(os.getenv("DB_CONN"))
-    away[save_cols].to_sql(os.getenv("AWAY_TABLE"), con=conn, if_exists="append", index=False)
+    away[save_cols].to_sql(table, con=conn, if_exists="append", index=False)

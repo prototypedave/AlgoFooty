@@ -38,11 +38,9 @@ def assign_prediction_obj(df, pred, odds):
 def todays_predictions(day):
     predictions = []
     date = (datetime.now() - timedelta(days=day)).date()
-    print(date)
     engine = create_engine(os.getenv("DB_CONN"))
 
     home_wins = retrieve_predictions(engine, os.getenv("HOME_TABLE"), date)
-    print(home_wins)
     home_wins = home_wins.drop_duplicates(subset=["home_team", "away_team", "match_time"])
     odds = home_wins["odds"].values
     predictions.extend(assign_prediction_obj(home_wins, "home win", odds))
@@ -61,3 +59,33 @@ def todays_predictions(day):
     total_odds = total_odds * math.prod(odds)
 
     return predictions
+
+
+def todays_sure_predictions(day):
+    predictions = []
+    date = (datetime.now() - timedelta(days=day)).date()
+    engine = create_engine(os.getenv("DB_CONN"))
+
+    home_wins = retrieve_predictions(engine, os.getenv("HOME_SURE_TABLE"), date)
+    home_wins = home_wins.drop_duplicates(subset=["home_team", "away_team", "match_time"])
+    odds = home_wins["odds"].values
+    predictions.extend(assign_prediction_obj(home_wins, "home win", odds))
+    total_odds = math.prod(odds)
+
+    away_wins = retrieve_predictions(engine, os.getenv("AWAY_SURE_TABLE"), date)
+    away_wins = away_wins.drop_duplicates(subset=["home_team", "away_team", "match_time"])
+    odds = away_wins["odds"].values
+    predictions.extend(assign_prediction_obj(away_wins, "away win", odds))
+    total_odds = total_odds * math.prod(odds)
+
+    over = retrieve_predictions(engine, os.getenv("OVER_SURE_TABLE"), date)
+    over = over.drop_duplicates(subset=["home_team", "away_team", "match_time"])
+    odds = over["odds"].values
+    predictions.extend(assign_prediction_obj(over, "over 2.5", odds))
+    total_odds = total_odds * math.prod(odds)
+
+    return predictions
+
+
+if __name__ == '__main__':
+    print(todays_sure_predictions(0))

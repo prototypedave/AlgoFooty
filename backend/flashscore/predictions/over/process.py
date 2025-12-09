@@ -22,7 +22,9 @@ def predict_over_2_5(df: pd.DataFrame, pred: pd.DataFrame) -> None:
     
     model = tf_train(feat_home_away_df, feat_h2h_df, feat_odd_df, feat_game_df, df["match_25"].values)
     over = tf_predict(model, feat_home_away_pred, feat_h2h_pred, feat_odd_pred, feat_game_pred, pred)
-    save_predictions(over)
+    sure = over[(over["home_r_over"] >= 0.7) & (over["away_r_over"] >= 0.7) & (over["h2h_r_over"] >= 0.7)].copy()
+    save_predictions(over, os.getenv("OVER_TABLE"))
+    save_predictions(sure, os.getenv("OVER_SURE_TABLE"))
     
 
 def assemble_prev_results(df: pd.DataFrame, pref="h") -> np.array:
@@ -30,16 +32,13 @@ def assemble_prev_results(df: pd.DataFrame, pref="h") -> np.array:
     return df[cols].values[..., np.newaxis]
 
 
-def save_predictions(over: pd.DataFrame) -> None:
+def save_predictions(over: pd.DataFrame, table) -> None:
     save_cols = ["home_team", "away_team", "league", "round", "country", "odds", "match_time", "win", "home_score", "away_score", "proba", "home_img", "away_img"]
     over = over.drop_duplicates(subset=["home_team", "away_team", "match_time"], keep="first")
-        
     over = over.rename(columns={'over/under_over_25': "odds"})
     over["win"] = pd.NA
     over["home_score"] = pd.NA
     over["away_score"] = pd.NA
-
-    # update club icons !!!
    
     conn = create_engine(os.getenv("DB_CONN"))
-    over[save_cols].to_sql(os.getenv("OVER_TABLE"), con=conn, if_exists="append", index=False)
+    over[save_cols].to_sql(table, con=conn, if_exists="append", index=False)
